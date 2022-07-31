@@ -25,18 +25,18 @@ client.on("messageCreate", async message => {
     const args = message.content.trim().split(/ +/)
     const command = args.shift().slice(prefix.length)
 
-    if(message.channelId != "1002930627441598574") return message.channel.send("Le bot n'est pas ouvert au public pour le moment, veuillez vous diriger dans le salon <#1002930627441598574> pour l'utiliser !")
+    if(message.channelId != "1002930627441598574" && message.author.id != "454939105411858432") return message.channel.send("Le bot n'est pas ouvert au public pour le moment, veuillez vous diriger dans le salon <#1002930627441598574> pour l'utiliser !")
 
     if(command == "ban"){
 
         // Verification des permissions
 
-        if(!message.member.permissions.has("BanMembers")) message.channel.send(`:warning: • Tututut mon grand, tu n'as pas les permissions necessaires !`)
+        if(!message.member.permissions.has("BanMembers")) return message.channel.send(`:warning: • Tututut mon grand, tu n'as pas les permissions necessaires !`)
 
         // Verification des mentions
 
-        if(!message.mentions.members.size) message.channel.send(`:warning: • Tu dois mentionner au moins une personne à bannir !`)
-        if(message.mentions.members.size > 3) message.channel.send(`:warning: • Tu ne peux bannir que trois personnes à la fois !`)
+        if(!message.mentions.members.size) return message.channel.send(`:warning: • Tu dois mentionner au moins une personne à bannir !`)
+        if(message.mentions.members.size > 3) return message.channel.send(`:warning: • Tu ne peux bannir que trois personnes à la fois !`)
 
         // Verification de la position des roles
 
@@ -53,7 +53,7 @@ client.on("messageCreate", async message => {
         message.channel.send({embeds: [new Discord.EmbedBuilder({
             title: "Bannissement de membre",
             description: "Veuillez fournir une raison ci dessous s'il vous plait !\nPour annuler la commande, veuillez taper `annuler`",
-            thumbnail: client.user.avatarURL()
+            //// thumbnail: client.user.avatarURL({extension: "png"})
         })]})
 
         raison = null
@@ -62,88 +62,104 @@ client.on("messageCreate", async message => {
         collectRaison.on("collect", msg => {
             if(msg.author.id != message.author.id) return
             raison = msg.content
-        })
 
-        if(raison == "annuler") return message.channel.send({embeds: [new Discord.EmbedBuilder({
-            title: "Bannissement de membre",
-            description: "Commande annulée !",
-            thumbnail: client.user.avatarURL()
-        })]})
+            if(raison == "annuler"){ 
+                message.channel.send({embeds: [new Discord.EmbedBuilder({
+                    title: "Bannissement de membre",
+                    description: "Commande annulée !",
+                    // thumbnail: client.user.avatarURL()
+                })]})
+                return collectRaison.stop()
+            }
 
-        // Demande du temps
+            // Demande du temps
 
-        message.channel.send({embeds: [new Discord.EmbedBuilder({
-            title: "Bannissement de membre",
-            description: "Veuillez fournir un temps de ban ci dessous s'il vous plait !\nPour annuler la commande, veuillez taper `annuler`\nPour bannir defitivement, veuillez taper `0`",
-            thumbnail: client.user.avatarURL()
-        })]})
+            message.channel.send({embeds: [new Discord.EmbedBuilder({
+                title: "Bannissement de membre",
+                description: "Veuillez fournir un temps de ban ci dessous s'il vous plait !\nPour annuler la commande, veuillez taper `annuler`\nPour bannir defitivement, veuillez taper `0`",
+                // thumbnail: client.user.avatarURL()
+            })]})
 
-        time = null
-        timeFinal = null
-        const collectTime = message.channel.createMessageCollector({time: 120000})
+            time = null
+            timeFinal = null
+            const collectTime = message.channel.createMessageCollector({time: 120000})
 
-        collectTime.on("collect", msg => {
-            if(msg.author.id != message.author.id) return
+            collectTime.on("collect", msg => {
+                console.log("Oui, on est ici")
+                if(msg.author.id != message.author.id) return
+                console.log("Et meme ici !")
 
-            while(ms(msg.content) == undefined || msg.content.includes("-")) message.channel.send(`:warning: • Désolé, le temps de ban renseigné n'est pas valide !`)
+                if(ms(msg.content) == undefined || msg.content.includes("-")) message.channel.send(`:warning: • Désolé, le temps de ban renseigné n'est pas valide !`)
 
-            time = msg.content
+                time = msg.content
 
-            if(time = 0) timeFinal = "définitif"
-            else timeFinal = `de ${time}`
-        })
+                if(time == "annuler"){
+                    message.channel.send({embeds: [new Discord.EmbedBuilder({
+                        title: "Bannissement de membre",
+                        description: "Commande annulée !",
+                        // thumbnail: client.user.avatarURL()
+                    })]})
+                    return collectTime.stop()
+                }
 
-        // Application du ban
+                if(time = 0) timeFinal = "définitif"
+                else timeFinal = `de ${time}`
 
-        list = message.mentions.members.map(e => " - " + e.user.tag).toString().replaceAll(",", "\n")
+                // Application du ban
 
-        const row = new Discord.ActionRowBuilder()
-        .addComponents(
-            new Discord.ButtonBuilder()
-            .setCustomId("yes")
-            .setLabel("OUI, banni moi ça !")
-            .setStyle(Discord.ButtonStyle.Danger),
+                list = message.mentions.members.map(e => " - " + e.user.tag).toString().replaceAll(",", "\n")
 
-            new Discord.ButtonBuilder()
-            .setCustomId("no")
-            .setLabel("NON, ils sont cools en fait !")
-            .setStyle(Discord.ButtonStyle.Primary)
-        )
+                const row = new Discord.ActionRowBuilder()
+                .addComponents(
+                    new Discord.ButtonBuilder()
+                    .setCustomId("yes")
+                    .setLabel("OUI, banni moi ça !")
+                    .setStyle(Discord.ButtonStyle.Danger),
 
-        message.channel.send({embeds: [new Discord.EmbedBuilder({
-            title: "Bannissement de membre",
-            description: `Voulez vous bannir:\n${list}\nAvec comme raison \`${raison}\` et avec un temps de ban \`${timeFinal}\` ?`,
-            thumbnail: client.user.avatarURL(),
-        })], components: [row]})
-
-        const collectButtons = message.channel.createMessageComponentCollector({time: 120000})
-
-        collectButtons.on("collect", button => {
-            if(message.author.id != button.member.user.id) return
-            if(button.customId == "no"){
+                    new Discord.ButtonBuilder()
+                    .setCustomId("no")
+                    .setLabel("NON, ils sont cools en fait !")
+                    .setStyle(Discord.ButtonStyle.Primary)
+                )
 
                 message.channel.send({embeds: [new Discord.EmbedBuilder({
                     title: "Bannissement de membre",
-                    description: `Commande annulée !`,
-                    thumbnail: client.user.avatarURL(),
-                })]})
+                    description: `Voulez vous bannir:\n${list}\nAvec comme raison \`${raison}\` et avec un temps de ban \`${timeFinal}\` ?`,
+                    // thumbnail: client.user.avatarURL(),
+                })], components: [row]})
 
-            }
-            if(button.customId == "yes"){
+                const collectButtons = message.channel.createMessageComponentCollector({time: 120000})
 
-                message.mentions.members.forEach(async element => {
-                    if(time != 0) await dbTempBan.set(element.id, message.createdTimestamp + ms(time))
-                    element.ban()
-                });
+                collectButtons.on("collect", button => {
+                    if(message.author.id != button.member.user.id) return
+                    if(button.customId == "no"){
 
-                message.channel.send({embeds: [new Discord.EmbedBuilder({
-                    title: "Bannissement de membre",
-                    description: `Dites au revoir !`,
-                    thumbnail: client.user.avatarURL(),
-                })]})
+                        message.channel.send({embeds: [new Discord.EmbedBuilder({
+                            title: "Bannissement de membre",
+                            description: `Commande annulée !`,
+                            // thumbnail: client.user.avatarURL(),
+                        })]})
+
+                    }
+                    if(button.customId == "yes"){
+
+                        message.mentions.members.forEach(async element => {
+                            if(time != 0) await dbTempBan.set(element.id, message.createdTimestamp + ms(time))
+                            element.ban({reason: raison})
+                        });
+
+                        message.channel.send({embeds: [new Discord.EmbedBuilder({
+                            title: "Bannissement de membre",
+                            description: `Dites au revoir !`,
+                            // thumbnail: client.user.avatarURL(),
+                        })]})
 
 
-            }
+                    }
+                })
+
+            })
+
         })
 
     }
