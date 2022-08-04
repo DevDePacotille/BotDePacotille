@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "anime-randomjs": "^1.3.4",
     "better-sqlite3": "^7.6.2",
     "discord.js": "^14.1.1",
     "git": "^0.1.5",

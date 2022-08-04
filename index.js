@@ -1,8 +1,10 @@
 const ms = require("ms")
 const { QuickDB } = require("quick.db")
+const anime = require("anime-randomjs")
 const token = require("./token.json")
 const db = new QuickDB()
 const Discord = require("discord.js")
+const { ButtonStyle } = require("discord.js")
 const client = new Discord.Client({intents: [Discord.GatewayIntentBits.MessageContent, Discord.GatewayIntentBits.GuildMessages, Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMembers]})
 
 client.on("ready", () => {
@@ -14,7 +16,7 @@ client.on("messageCreate", async message => {
 
     const dbTempBan = db.table("tempBan")
 
-    const prefix = "bdg!"
+    const prefix = "p!"
 
     await (await dbTempBan.all()).map(async e => {
         if(e["value"] < message.createdTimestamp) message.guild.members.unban(e["id"]) && await dbTempBan.delete(e["id"])
@@ -25,13 +27,11 @@ client.on("messageCreate", async message => {
     const args = message.content.trim().split(/ +/)
     const command = args.shift().slice(prefix.length)
 
-    if(message.channelId != "1002930627441598574" && message.author.id != "454939105411858432") return message.channel.send("Le bot n'est pas ouvert au public pour le moment, veuillez vous diriger dans le salon <#1002930627441598574> pour l'utiliser !")
-
     if(command == "ban"){
 
         // Verification des permissions
 
-        if(!message.member.permissions.has("BanMembers")) return message.channel.send(`:warning: • Tututut mon grand, tu n'as pas les permissions necessaires !`)
+        //if(!message.member.permissions.has("BanMembers")) return message.channel.send(`:warning: • Tututut mon grand, tu n'as pas les permissions necessaires !`)
 
         // Verification des mentions
 
@@ -64,6 +64,7 @@ client.on("messageCreate", async message => {
         collectRaison.on("collect", msg => {
             if(msg.author.id != message.author.id) return
             raison = msg.content
+            console.log(collectRaison.ended)
 
             if(raison == "annuler"){ 
                 message.channel.send({embeds: [new Discord.EmbedBuilder({
@@ -72,11 +73,12 @@ client.on("messageCreate", async message => {
                     // thumbnail: client.user.avatarURL()
                 })]})
                 return collectRaison.stop()
-            }
+            }else{
             collectRaison.stop()
+            }
         })
 
-        console.log(collectRaison.checkEnd())
+        console.log(collectRaison.ended)
 
         if(!collectRaison.checkEnd()) return
 
@@ -175,6 +177,98 @@ client.on("messageCreate", async message => {
                 }
             })
 
+    }
+
+    if(command == "kiss"){
+        if(!message.mentions.members.size) return message.channel.send(`:warning: • Tu dois mentionner une personne à embrasser !`)
+        const row = new Discord.ActionRowBuilder()
+        .addComponents(
+            new Discord.ButtonBuilder({
+                label: "L'image ne s'affiche pas !",
+                style: ButtonStyle.Danger,
+                customId: "report"
+            })
+        )
+        link = anime.random("kiss")
+
+        if(message.member.id == message.mentions.members.first().id) {
+
+            message.channel.send({embeds: [new Discord.EmbedBuilder()
+                .setTitle("Kiss")
+                .setDescription(`Tu as besoin d'amour ${message.member.nickname ?? message.author.username} ? Tiens :heart:`)
+                .setImage(link)
+                .setColor("LuminousVividPink")
+            ], components: [row]})
+
+        }else{
+
+            message.channel.send({embeds: [new Discord.EmbedBuilder()
+                .setTitle("Kiss")
+                .setDescription(`${message.member.nickname ?? message.author.username} embrasse ${message.mentions.members.first().nickname ?? message.mentions.members.first().user.username} :heart:`)
+                .setImage(link)
+                .setColor("LuminousVividPink")
+            ], components: [row]})
+
+        }
+
+        const collectKiss = message.channel.createMessageComponentCollector({time: 120000})
+
+        collectKiss.on("collect", async interaction => {
+            if(interaction.member.id != message.author.id) return
+            client.users.cache.get("454939105411858432").send(`:warning: • Le lien \`${link}\` dans la catégorie \`kiss\` ne fonctionne plus !`)
+            await interaction.deferReply({ephemeral: true})
+            await interaction.editReply({embeds: [new Discord.EmbedBuilder()
+                .setTitle("Signalement")
+                .setDescription(`L'image a bien été signalée !`)
+                .setColor("LuminousVividPink")
+            ]})
+        })
+    }
+
+    if(command == "hug"){
+        if(!message.mentions.members.size) return message.channel.send(`:warning: • Tu dois mentionner une personne à caliner !`)
+        const row = new Discord.ActionRowBuilder()
+        .addComponents(
+            new Discord.ButtonBuilder({
+                label: "L'image ne s'affiche pas !",
+                style: ButtonStyle.Danger,
+                customId: "report"
+            })
+        )
+        link = anime.random("hug")
+
+        if(message.member.id == message.mentions.members.first().id) {
+
+            message.channel.send({embeds: [new Discord.EmbedBuilder()
+                .setTitle("Hug")
+                .setDescription(`Tu as besoin d'amour ${message.member.nickname ?? message.author.username} ? Tiens :heart:`)
+                .setImage(link)
+                .setColor("LuminousVividPink")
+            ], components: [row]})
+
+        }else{
+
+            message.channel.send({embeds: [new Discord.EmbedBuilder()
+                .setTitle("Hug")
+                .setDescription(`${message.member.nickname ?? message.author.username} prend ${message.mentions.members.first().nickname ?? message.mentions.members.first().user.username} dans ses bras :heart:`)
+                .setImage(link)
+                .setColor("LuminousVividPink")
+            ], components: [row]})
+
+        }
+        
+        const collectHug = message.channel.createMessageComponentCollector({time: 120000})
+
+        collectHug.on("collect", async interaction => {
+            if(interaction.member.id != message.author.id) return
+            client.users.cache.get("454939105411858432").send(`:warning: • Le lien \`${link}\` dans la catégorie \`hug\` ne fonctionne plus !`)
+            await interaction.deferReply({ephemeral: true})
+            await interaction.editReply({embeds: [new Discord.EmbedBuilder()
+                .setTitle("Signalement")
+                .setDescription(`L'image a bien été signalée !`)
+                .setColor("LuminousVividPink")
+            ]})
+        })
     }
 
 })
